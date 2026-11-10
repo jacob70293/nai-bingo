@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>小乃賓果</title>
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <style>
+    /* 單一深色主題：暗色石板底，格子用 ARPG 物品稀有度配色（普通 / 魔法 / 稀有 / 傳奇） */
+    :root {
+      color-scheme: dark;
+      --bg: #15110e;
+      --panel: #201a15;
+      --cell: #1b1612;
+      --line: #3a3027;
+      --fg: #e8e0d4;
+      --muted: #9a8c7c;
+      --magic: #8888ff;
+      --magic-glow: rgba(136, 136, 255, .3);
+      --rare: #ffff77;
+      --unique: #af6025;
+      --unique-glow: rgba(175, 96, 37, .35);
+      --font-display: "Noto Serif TC", "Songti TC", serif;
+      --font-latin: "Cinzel", "Trajan Pro", "Noto Serif TC", serif;
+      --gold: #c8a96a;
+      --gold-dim: #6b5530;
+      --life: #b8241c;
+      --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+    }
+
+    #ash {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(175, 96, 37, .18) 0%, transparent 70%) fixed,
+        radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, .6) 100%) fixed,
+        var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      padding-block: 28px 40px;
+    }
+
+    .wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+    }
+
+    /* 截圖範圍：標題 + 玩家資訊 + 盤面 */
+    .sheet {
+      display: grid;
+      gap: 14px;
+      padding: 22px 16px 18px;
+      position: relative;
+      background: linear-gradient(180deg, #1d1712 0%, #120e0b 100%);
+      border: 1px solid var(--gold-dim);
+      box-shadow: 0 0 0 3px #0c0907, 0 0 0 4px var(--gold-dim), 0 12px 40px rgba(0, 0, 0, .6);
+    }
+
+    /* 四角鉚釘裝飾 */
+    .sheet::before,
+    .sheet::after {
+      content: "";
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      top: -6px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      box-shadow: 0 0 6px var(--unique-glow);
+    }
+
+    .sheet::before {
+      left: -6px;
+    }
+
+    .sheet::after {
+      right: -6px;
+    }
+
+    .rivets {
+      display: contents;
+    }
+
+    .rivets::before,
+    .rivets::after {
+      content: "";
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      bottom: -6px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+
+    .rivets::before {
+      left: -6px;
+    }
+
+    .rivets::after {
+      right: -6px;
+    }
+
+    .eyebrow {
+      font-family: var(--font-latin);
+      font-size: 11px;
+      letter-spacing: .4em;
+      color: var(--gold);
+      margin: 0;
+    }
+
+    .sep {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--gold);
+    }
+
+    .sep::before,
+    .sep::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), var(--gold));
+    }
+
+    .sep::after {
+      background: linear-gradient(90deg, var(--gold), var(--gold-dim), transparent);
+    }
+
+    .sep i {
+      width: 7px;
+      height: 7px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      display: block;
+    }
+
+    header {
+      text-align: center;
+      display: grid;
+      gap: 4px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 900;
+      margin: 0;
+      font-size: clamp(30px, 8vw, 44px);
+      letter-spacing: .08em;
+      color: var(--unique);
+      text-shadow: 0 0 18px var(--unique-glow);
+      text-wrap: balance;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .04em;
+      margin: 0;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      flex-wrap: wrap;
+    }
+
+    .meta b {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    .player {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--magic);
+      text-shadow: 0 0 8px var(--magic-glow);
+    }
+
+    /* 生命球：標記數量越多，紅色越滿 */
+    .orb-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .orb {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 50%, #1a0a08, #070303);
+      border: 2px solid var(--gold-dim);
+      box-shadow: 0 0 0 1px #000, inset 0 0 8px #000;
+    }
+
+    .orb .fill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 0%;
+      background: radial-gradient(circle at 40% 30%, #ff6a4d 0%, var(--life) 45%, #5a0d08 100%);
+      transition: height .4s ease-out;
+    }
+
+    .orb::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      width: 12px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .25);
+      filter: blur(1px);
+    }
+
+    .stamp {
+      color: var(--unique);
+      border: 1px solid var(--unique);
+      padding: 1px 8px;
+      border-radius: 2px;
+      font-size: 12px;
+      letter-spacing: .1em;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      max-width: 100%;
+      min-width: 0;
+      background: linear-gradient(160deg, #241d17 0%, var(--cell) 55%, #120e0b 100%);
+      color: var(--fg);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), inset 0 -2px 6px rgba(0, 0, 0, .5);
+      font: 500 clamp(12px, 3.4vw, 15px)/1.35 var(--font-body);
+      padding: 6px;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      word-break: break-word;
+      transition: border-color .15s, background .15s, transform .1s;
+    }
+
+    .cell:hover {
+      border-color: var(--gold-dim);
+      color: #fff;
+    }
+
+    .cell:active {
+      transform: scale(.97);
+    }
+
+    .cell:focus-visible {
+      outline: 2px solid var(--magic);
+      outline-offset: 2px;
+    }
+
+    .cell.rare {
+      color: var(--rare);
+      border-color: #5a5a2a;
+    }
+
+    .cell.rare::after {
+      content: "稀有";
+      position: absolute;
+      top: 4px;
+      right: 5px;
+      font-size: 10px;
+      letter-spacing: .1em;
+      opacity: .7;
+    }
+
+    .cell.selected {
+      border-color: var(--magic);
+      box-shadow: inset 0 0 14px var(--magic-glow), 0 0 0 1px var(--magic);
+    }
+
+    .cell.marked {
+      background: radial-gradient(ellipse at 50% 120%, rgba(255, 140, 40, .35) 0%, transparent 60%), linear-gradient(180deg, #3a2414, #1e130b);
+      border-color: var(--unique);
+      color: #f2c79a;
+      box-shadow: inset 0 0 16px var(--unique-glow), 0 0 8px var(--unique-glow);
+    }
+
+    /* 標記：通貨珠樣式的小圓 */
+    .cell.marked::before {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffe6a8 0%, #e09a2c 45%, #6b3b0c 100%);
+      box-shadow: 0 0 6px rgba(255, 170, 60, .7);
+    }
+
+    .cell.win {
+      border-color: var(--rare);
+      box-shadow: inset 0 0 18px rgba(255, 255, 119, .25), 0 0 10px rgba(255, 255, 119, .25);
+    }
+
+    /* 擺盤階段 */
+    .setup {
+      display: grid;
+      gap: 12px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .hint em {
+      color: var(--magic);
+      font-style: normal;
+    }
+
+    label.field {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input[type="text"] {
+      background: var(--cell);
+      color: var(--fg);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 10px 12px;
+      font: 500 15px var(--font-body);
+    }
+
+    input[type="text"]:focus-visible {
+      outline: 2px solid var(--magic);
+      outline-offset: 1px;
+    }
+
+    .bench-title {
+      font-size: 12px;
+      letter-spacing: .12em;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .bench {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      background: var(--panel);
+      color: var(--fg);
+      border: 1px dashed var(--line);
+      border-radius: 3px;
+      padding: 7px 10px;
+      font: 500 13px var(--font-body);
+      cursor: pointer;
+    }
+
+    .chip.rare {
+      color: var(--rare);
+    }
+
+    .chip.selected {
+      border-style: solid;
+      border-color: var(--magic);
+      box-shadow: 0 0 0 1px var(--magic);
+    }
+
+    .chip:focus-visible {
+      outline: 2px solid var(--magic);
+      outline-offset: 2px;
+    }
+
+    /* 賓果：傳奇物品掉落光柱 */
+    .banner {
+      text-align: center;
+      padding: 22px 12px 16px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--unique);
+      background: linear-gradient(180deg, rgba(175, 96, 37, .18), rgba(20, 12, 8, .9));
+      display: grid;
+      gap: 4px;
+    }
+
+    .banner .beam {
+      position: absolute;
+      left: 50%;
+      top: -40%;
+      width: 46px;
+      height: 180%;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, transparent, rgba(255, 150, 60, .55) 50%, transparent);
+      filter: blur(10px);
+      pointer-events: none;
+    }
+
+    .banner .tag {
+      font-family: var(--font-latin);
+      font-size: 11px;
+      letter-spacing: .4em;
+      color: var(--gold);
+      position: relative;
+    }
+
+    .banner strong {
+      font-family: var(--font-latin);
+      font-weight: 800;
+      font-size: 34px;
+      letter-spacing: .25em;
+      color: var(--unique);
+      text-shadow: 0 0 14px rgba(255, 140, 40, .6);
+      display: block;
+      position: relative;
+    }
+
+    .banner span {
+      font-size: 13px;
+      color: var(--fg);
+      position: relative;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .banner:not([hidden]) {
+        animation: drop .5s ease-out;
+      }
+
+      .banner .beam {
+        animation: pulse 2.2s ease-in-out infinite;
+      }
+
+      @keyframes drop {
+        from {
+          transform: translateY(-8px);
+          opacity: .3;
+        }
+
+        to {
+          transform: none;
+          opacity: 1;
+        }
+      }
+
+      @keyframes pulse {
+
+        0%,
+        100% {
+          opacity: .55;
+        }
+
+        50% {
+          opacity: 1;
+        }
+      }
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button.btn {
+      flex: 1 1 140px;
+      padding: 12px 14px;
+      font: 700 14px var(--font-body);
+      letter-spacing: .1em;
+      border-radius: 1px;
+      cursor: pointer;
+      border: 1px solid var(--gold-dim);
+      background: linear-gradient(180deg, #2a221a, #15100c);
+      color: var(--gold);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 2px 0 #000;
+    }
+
+    button.btn.primary {
+      border-color: var(--unique);
+      color: #f2c79a;
+      background: linear-gradient(180deg, #4a2a14, #1e120a);
+    }
+
+    button.btn:hover {
+      filter: brightness(1.2);
+    }
+
+    button.btn:focus-visible {
+      outline: 2px solid var(--magic);
+      outline-offset: 2px;
+    }
+
+    .confirm {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--unique);
+      border-radius: 3px;
+      background: rgba(175, 96, 37, .08);
+      font-size: 13px;
+    }
+
+    .confirm p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* 拖曳 */
+    .board.arranging .cell,
+    .chip {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .board.arranging .cell {
+      cursor: grab;
+    }
+
+    .dragging {
+      opacity: .35;
+    }
+
+    .drop-over {
+      border-color: var(--magic) !important;
+      box-shadow: inset 0 0 16px var(--magic-glow), 0 0 0 1px var(--magic) !important;
+    }
+
+    .ghost {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 50;
+      pointer-events: none;
+      margin: 0;
+      opacity: .92;
+      transform: rotate(-3deg);
+      cursor: grabbing;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .6), 0 0 0 1px var(--gold) !important;
+    }
+
+    .credit {
+      margin: 0;
+      text-align: right;
+      font: 600 11px var(--font-latin);
+      letter-spacing: .2em;
+      color: var(--gold-dim);
+    }
+
+    .msg {
+      margin: 0;
+      font-size: 13px;
+      color: var(--gold);
+      text-align: center;
+    }
+
+    .shot {
+      width: 100%;
+      max-width: 100%;
+      border: 1px solid var(--gold-dim);
+      display: block;
+    }
+
+    details {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--fg);
+    }
+
+    details ul {
+      padding-left: 20px;
+      margin: 10px 0 0;
+      display: grid;
+      gap: 4px;
+      line-height: 1.6;
+    }
+  </style>
+
+</head>
+
+<body>
+  <canvas id="ash" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="sheet" id="sheet">
+      <span class="rivets" aria-hidden="true"></span>
+      <header>
+        <p class="eyebrow">SEASON BINGO</p>
+        <h1>小乃賓果</h1>
+        <div class="sep" aria-hidden="true"><i></i></div>
+        <p class="sub">他問一句，你點一格。連成一線就賓果。</p>
+      </header>
+      <div class="meta">
+        <span class="player" id="playerName">未命名玩家</span>
+        <span id="stampWrap" hidden><span class="stamp" id="stamp"></span></span>
+        <span class="orb-wrap"><span class="orb" aria-hidden="true"><span class="fill"
+              id="orbFill"></span></span><span><b id="count">0</b> / 16</span></span>
+      </div>
+      <div class="board" id="board" role="grid" aria-label="賓果盤"></div>
+    </div>
+
+    <div class="banner" id="banner" hidden>
+      <div class="beam" aria-hidden="true"></div>
+      <span class="tag">UNIQUE DROP</span>
+      <strong>BINGO</strong>
+      <span id="bannerText"></span>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="shotBtn" type="button">複製截圖</button>
+    </div>
+    <p class="msg" id="shotMsg" hidden></p>
+    <img class="shot" id="shotImg" alt="賓果盤截圖" hidden>
+
+    <!-- 擺盤階段 -->
+    <section class="setup" id="setup">
+      <p class="hint">開季前先擺好你的盤：把格子<em>拖到另一格</em>就能互換位置，把下方備選題<em>拖進盤面</em>就能換掉題目。不好拖的話，點一下再點另一個也能交換。擺好後鎖定，截圖貼上 Discord。
+      </p>
+      <label class="field" for="nameInput">你的名字
+        <input type="text" id="nameInput" maxlength="16" placeholder="例如：夜神">
+      </label>
+      <p class="bench-title">備選題</p>
+      <div class="bench" id="bench"></div>
+      <div class="actions">
+        <button class="btn" id="shuffleBtn" type="button">隨機重排</button>
+        <button class="btn primary" id="lockBtn" type="button">鎖定開季</button>
+      </div>
+    </section>
+
+    <!-- 遊戲階段 -->
+    <section class="actions" id="playActions" hidden>
+      <button class="btn" id="clearMarks" type="button">清除標記</button>
+      <button class="btn" id="resetBtn" type="button">重新擺盤</button>
+    </section>
+
+    <div class="confirm" id="confirmBox" hidden>
+      <p id="confirmText"></p>
+      <div class="actions">
+        <button class="btn" id="confirmNo" type="button">取消</button>
+        <button class="btn primary" id="confirmYes" type="button">確定</button>
+      </div>
+    </div>
+
+    <details>
+      <summary>規則</summary>
+      <ul>
+        <li>開季第一天，每個人從題庫挑 16 題擺成自己的盤，鎖定後截圖貼到 Discord，之後不能再改。</li>
+        <li>小乃問出盤上的問題時，點那一格標記。點錯可以再點一次取消。</li>
+        <li>橫、直、斜任一條連滿 4 格就是賓果，截圖對照開季時的盤面為證。</li>
+        <li>黃字是稀有格，出現的機率極低，敢擺就是賭。</li>
+      </ul>
+    </details>
+
+    <p class="credit">MADE BY <span id="author"></span> · 2026</p>
+  </div>
+
+  <script>
+    // 題庫。rare: true 的題目以稀有格樣式顯示
+    const POOL = [
+      { text: "天賦要點哪邊？" },
+      { text: "啊我怎麼一直死？" },
+      { text: "章節要怎麼走？" },
+      { text: "昇華要選哪個？" },
+      { text: "這件裝備好嗎？幫我看一下" },
+      { text: "這裝備值多少錢？" },
+      { text: "有人可以給我裝嗎？" },
+      { text: "過濾器用哪個？" },
+      { text: "問了上週已經問過的問題" },
+      { text: "我抗性怎麼是負的？" },
+      { text: "這個要不要撿？" },
+      { text: "這顆要串什麼輔助？" },
+      { text: "欸夜神" },
+      { text: "欸蛋糕" },
+      { text: "欸小白" },
+      { text: "拿來喔" },
+      { text: "我要玩什麼流派？" },
+      { text: "這裝怎麼做？" },
+      { text: "你們在哪？組我一下" },
+      { text: "幫我開門" },
+      { text: "等等我自己查一下", rare: true },
+    ];
+
+    // 作者名稱，顯示在頁面右下角
+    const AUTHOR = "Cake";
+
+    const SIZE = 4;
+    const N = SIZE * SIZE;
+    const STORE_KEY = "nai-bingo-v2";
+
+    // 所有可連線：4 橫、4 直、2 斜
+    const LINES = [];
+    for (let i = 0; i < SIZE; i++) {
+      LINES.push([...Array(SIZE)].map((_, j) => i * SIZE + j));
+      LINES.push([...Array(SIZE)].map((_, j) => j * SIZE + i));
+    }
+    LINES.push([...Array(SIZE)].map((_, j) => j * SIZE + j));
+    LINES.push([...Array(SIZE)].map((_, j) => j * SIZE + (SIZE - 1 - j)));
+
+    // picks: 盤面上 16 格各自對應的題庫索引
+    // locked: 鎖定時間字串，空字串表示仍在擺盤
+    let state = { name: "", picks: [], marked: [], locked: "" };
+    // 擺盤時目前選取的目標：{ kind: "cell" | "bench", i }
+    let selected = null;
+    let pendingConfirm = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function randomPicks() {
+      return shuffle(POOL.map((_, i) => i)).slice(0, N);
+    }
+
+    function save() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { }
+    }
+
+    function load() {
+      try {
+        const s = JSON.parse(localStorage.getItem(STORE_KEY));
+        if (s && Array.isArray(s.picks) && s.picks.length === N && s.picks.every((i) => POOL[i]) && new Set(s.picks).size === N) {
+          state = Object.assign({ name: "", marked: Array(N).fill(false), locked: "" }, s);
+          return true;
+        }
+      } catch (e) { }
+      return false;
+    }
+
+    function benchItems() {
+      const used = new Set(state.picks);
+      return POOL.map((_, i) => i).filter((i) => !used.has(i));
+    }
+
+    function winningLines() {
+      return LINES.filter((line) => line.every((i) => state.marked[i]));
+    }
+
+    // 擺盤階段的點選：兩格互換，或格子與備選題互換
+    function handleSetupTap(target) {
+      if (!selected) { selected = target; render(); return; }
+      if (selected.kind === target.kind && selected.i === target.i) { selected = null; render(); return; }
+
+      // 兩個都是備選題：改選後者
+      if (selected.kind === "bench" && target.kind === "bench") { selected = target; render(); return; }
+      applySwap(selected, target);
+      selected = null;
+      save();
+      render();
+    }
+
+    // 格子互換，或格子與備選題互換；備選題之間不處理
+    function applySwap(a, b) {
+      if (a.kind === "cell" && b.kind === "cell") {
+        if (a.i === b.i) return false;
+        [state.picks[a.i], state.picks[b.i]] = [state.picks[b.i], state.picks[a.i]];
+        return true;
+      }
+      if (a.kind !== b.kind) {
+        const cell = a.kind === "cell" ? a : b;
+        const bench = a.kind === "bench" ? a : b;
+        state.picks[cell.i] = bench.i;
+        return true;
+      }
+      return false;
+    }
+
+    // 拖曳：移動超過門檻才算拖，否則視為點擊
+    let drag = null;
+    let suppressClick = false;
+
+    function consumeDragClick() {
+      if (!suppressClick) return false;
+      suppressClick = false;
+      return true;
+    }
+
+    function startDrag(e, target, el) {
+      if (state.locked || (e.button !== undefined && e.button !== 0)) return;
+      drag = { target, el, x0: e.clientX, y0: e.clientY, active: false, ghost: null, over: null, dx: 0, dy: 0 };
+    }
+
+    function dropTargetAt(x, y) {
+      const hit = document.elementFromPoint(x, y);
+      return hit ? hit.closest("[data-kind]") : null;
+    }
+
+    function endDrag(commit, e) {
+      if (!drag) return;
+      const d = drag;
+      drag = null;
+      if (!d.active) return;
+      if (d.ghost) d.ghost.remove();
+      d.el.classList.remove("dragging");
+      if (d.over) d.over.classList.remove("drop-over");
+      suppressClick = true;
+      setTimeout(() => { suppressClick = false; }, 0);
+      if (commit && d.over) {
+        const t = { kind: d.over.dataset.kind, i: Number(d.over.dataset.i) };
+        if (applySwap(d.target, t)) save();
+      }
+      render();
+    }
+
+    window.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      if (!drag.active) {
+        if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
+        const r = drag.el.getBoundingClientRect();
+        const ghost = drag.el.cloneNode(true);
+        ghost.classList.remove("selected");
+        ghost.classList.add("ghost");
+        ghost.removeAttribute("data-kind");
+        ghost.style.width = r.width + "px";
+        ghost.style.height = r.height + "px";
+        document.body.appendChild(ghost);
+        drag.dx = drag.x0 - r.left;
+        drag.dy = drag.y0 - r.top;
+        drag.ghost = ghost;
+        drag.active = true;
+        drag.el.classList.add("dragging");
+        if (selected) { selected = null; document.querySelectorAll(".selected").forEach((n) => n.classList.remove("selected")); }
+      }
+      e.preventDefault();
+      drag.ghost.style.transform = `translate(${e.clientX - drag.dx}px, ${e.clientY - drag.dy}px) rotate(-3deg)`;
+      let over = dropTargetAt(e.clientX, e.clientY);
+      if (over === drag.el) over = null;
+      // 備選題只能丟進盤面
+      if (over && drag.target.kind === "bench" && over.dataset.kind === "bench") over = null;
+      if (over !== drag.over) {
+        if (drag.over) drag.over.classList.remove("drop-over");
+        if (over) over.classList.add("drop-over");
+        drag.over = over;
+      }
+    }, { passive: false });
+
+    window.addEventListener("pointerup", (e) => endDrag(true, e));
+    window.addEventListener("pointercancel", (e) => endDrag(false, e));
+
+    function askConfirm(text, onYes) {
+      pendingConfirm = onYes;
+      $("confirmText").textContent = text;
+      $("confirmBox").hidden = false;
+    }
+
+    function render() {
+      const locked = !!state.locked;
+      const board = $("board");
+      board.innerHTML = "";
+      board.classList.toggle("arranging", !locked);
+      const wins = locked ? winningLines() : [];
+      const winCells = new Set(wins.flat());
+
+      state.picks.forEach((p, i) => {
+        const q = POOL[p];
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const isSel = !locked && selected && selected.kind === "cell" && selected.i === i;
+        btn.className = "cell" + (q.rare ? " rare" : "") + (state.marked[i] ? " marked" : "") + (winCells.has(i) ? " win" : "") + (isSel ? " selected" : "");
+        btn.textContent = q.text;
+        if (!locked) {
+          btn.dataset.kind = "cell";
+          btn.dataset.i = i;
+          btn.addEventListener("pointerdown", (e) => startDrag(e, { kind: "cell", i }, btn));
+        }
+        if (locked) btn.setAttribute("aria-pressed", state.marked[i] ? "true" : "false");
+        btn.addEventListener("click", () => {
+          if (consumeDragClick()) return;
+          if (locked) {
+            state.marked[i] = !state.marked[i];
+            save();
+            render();
+          } else {
+            handleSetupTap({ kind: "cell", i });
+          }
+        });
+        board.appendChild(btn);
+      });
+
+      // 備選題
+      const bench = $("bench");
+      bench.innerHTML = "";
+      benchItems().forEach((p) => {
+        const q = POOL[p];
+        const chip = document.createElement("button");
+        chip.type = "button";
+        const isSel = selected && selected.kind === "bench" && selected.i === p;
+        chip.className = "chip" + (q.rare ? " rare" : "") + (isSel ? " selected" : "");
+        chip.textContent = q.text;
+        chip.dataset.kind = "bench";
+        chip.dataset.i = p;
+        chip.addEventListener("pointerdown", (e) => startDrag(e, { kind: "bench", i: p }, chip));
+        chip.addEventListener("click", () => {
+          if (consumeDragClick()) return;
+          handleSetupTap({ kind: "bench", i: p });
+        });
+        bench.appendChild(chip);
+      });
+
+      $("playerName").textContent = state.name || "未命名玩家";
+      const markedCount = state.marked.filter(Boolean).length;
+      $("count").textContent = markedCount;
+      $("orbFill").style.height = (markedCount / N * 100) + "%";
+      $("stampWrap").hidden = !locked;
+      $("stamp").textContent = locked ? `${state.locked} 鎖定` : "";
+
+      $("setup").hidden = locked;
+      $("playActions").hidden = !locked;
+
+      const banner = $("banner");
+      if (wins.length) {
+        banner.hidden = false;
+        $("bannerText").textContent = wins.length > 1 ? `${state.name || "你"}已連成 ${wins.length} 條線` : `${state.name || "你"}已連成一條線`;
+      } else {
+        banner.hidden = true;
+      }
+    }
+
+    $("nameInput").addEventListener("input", (e) => {
+      state.name = e.target.value.trim();
+      save();
+      render();
+    });
+
+    $("shuffleBtn").addEventListener("click", () => {
+      state.picks = randomPicks();
+      selected = null;
+      save();
+      render();
+    });
+
+    $("lockBtn").addEventListener("click", () => {
+      askConfirm("鎖定後就不能再換題目或位置，只能標記。確定下好離手哦？", () => {
+        const d = new Date();
+        state.locked = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+        state.marked = Array(N).fill(false);
+        selected = null;
+        save();
+        render();
+      });
+    });
+
+    $("clearMarks").addEventListener("click", () => {
+      askConfirm("清除所有標記？盤面會保留。", () => {
+        state.marked = Array(N).fill(false);
+        save();
+        render();
+      });
+    });
+
+    $("resetBtn").addEventListener("click", () => {
+      askConfirm("回到擺盤階段？標記會清空，新盤面要重新截圖給大家。", () => {
+        state.locked = "";
+        state.marked = Array(N).fill(false);
+        save();
+        render();
+      });
+    });
+
+    $("confirmYes").addEventListener("click", () => {
+      const fn = pendingConfirm;
+      pendingConfirm = null;
+      $("confirmBox").hidden = true;
+      if (fn) fn();
+    });
+    $("confirmNo").addEventListener("click", () => {
+      pendingConfirm = null;
+      $("confirmBox").hidden = true;
+    });
+
+    if (!load()) {
+      state = { name: "", picks: randomPicks(), marked: Array(N).fill(false), locked: "" };
+      save();
+    }
+    $("nameInput").value = state.name;
+    $("author").textContent = AUTHOR;
+    render();
+
+    // 將盤面繪製成圖片（玩家名稱 + 鎖定日期 + 4×4 盤面）
+    function drawCard() {
+      const W = 800, PAD = 40, GAP = 10, HEAD = 190;
+      const CELL = (W - PAD * 2 - GAP * (SIZE - 1)) / SIZE;
+      const H = HEAD + CELL * SIZE + GAP * (SIZE - 1) + 90;
+      const SCALE = 2;
+      const cv = document.createElement("canvas");
+      cv.width = W * SCALE; cv.height = H * SCALE;
+      const g = cv.getContext("2d");
+      g.scale(SCALE, SCALE);
+
+      const serif = '"Noto Serif TC", "Songti TC", serif';
+      const sans = '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+      const latin = '"Cinzel", "Noto Serif TC", serif';
+
+      // 底色與外框
+      const bg = g.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, "#1d1712"); bg.addColorStop(1, "#0f0b08");
+      g.fillStyle = bg; g.fillRect(0, 0, W, H);
+      g.strokeStyle = "#6b5530"; g.lineWidth = 2; g.strokeRect(10, 10, W - 20, H - 20);
+      g.fillStyle = "#c8a96a";
+      [[10, 10], [W - 10, 10], [10, H - 10], [W - 10, H - 10]].forEach(([x, y]) => {
+        g.save(); g.translate(x, y); g.rotate(Math.PI / 4); g.fillRect(-6, -6, 12, 12); g.restore();
+      });
+
+      // 標題
+      g.textAlign = "center"; g.textBaseline = "alphabetic";
+      g.fillStyle = "#c8a96a"; g.font = `600 14px ${latin}`;
+      g.fillText("S E A S O N   B I N G O", W / 2, 54);
+      g.fillStyle = "#af6025"; g.font = `900 52px ${serif}`;
+      g.shadowColor = "rgba(175,96,37,.6)"; g.shadowBlur = 16;
+      g.fillText("小乃賓果", W / 2, 112);
+      g.shadowBlur = 0;
+
+      // 玩家與日期
+      g.textAlign = "left"; g.fillStyle = "#8888ff"; g.font = `600 26px ${serif}`;
+      g.fillText(state.name || "未命名玩家", PAD, 166);
+      g.textAlign = "right"; g.fillStyle = "#af6025"; g.font = `500 18px ${sans}`;
+      g.fillText(state.locked ? `${state.locked} 鎖定` : "尚未鎖定", W - PAD, 164);
+
+      // 格子
+      const wins = state.locked ? winningLines() : [];
+      const winCells = new Set(wins.flat());
+      state.picks.forEach((p, i) => {
+        const q = POOL[p];
+        const x = PAD + (i % SIZE) * (CELL + GAP);
+        const y = HEAD + Math.floor(i / SIZE) * (CELL + GAP);
+        const marked = state.marked[i];
+        g.fillStyle = marked ? "#3a2414" : "#1b1612";
+        g.fillRect(x, y, CELL, CELL);
+        g.lineWidth = winCells.has(i) ? 3 : 1.5;
+        g.strokeStyle = winCells.has(i) ? "#ffff77" : marked ? "#af6025" : q.rare ? "#5a5a2a" : "#3a3027";
+        g.strokeRect(x + 0.75, y + 0.75, CELL - 1.5, CELL - 1.5);
+
+        // 中文逐字換行
+        g.font = `500 22px ${sans}`;
+        const maxW = CELL - 24;
+        const lines = [];
+        let cur = "";
+        for (const ch of q.text) {
+          if (g.measureText(cur + ch).width > maxW && cur) { lines.push(cur); cur = ch; } else cur += ch;
+        }
+        if (cur) lines.push(cur);
+        const LH = 30;
+        const startY = y + CELL / 2 - (lines.length - 1) * LH / 2;
+        g.textAlign = "center"; g.textBaseline = "middle";
+        g.fillStyle = q.rare ? "#ffff77" : marked ? "#f2c79a" : "#e8e0d4";
+        lines.forEach((ln, k) => g.fillText(ln, x + CELL / 2, startY + k * LH));
+
+        if (marked) {
+          const grad = g.createRadialGradient(x + CELL - 16, y + CELL - 17, 1, x + CELL - 14, y + CELL - 14, 9);
+          grad.addColorStop(0, "#ffe6a8"); grad.addColorStop(0.5, "#e09a2c"); grad.addColorStop(1, "#6b3b0c");
+          g.fillStyle = grad;
+          g.beginPath(); g.arc(x + CELL - 14, y + CELL - 14, 8, 0, Math.PI * 2); g.fill();
+        }
+        if (q.rare) {
+          g.font = `500 13px ${sans}`; g.fillStyle = "#ffff77"; g.textAlign = "right"; g.textBaseline = "top";
+          g.fillText("稀有", x + CELL - 8, y + 6);
+        }
+      });
+
+      // 頁尾
+      const fy = HEAD + CELL * SIZE + GAP * (SIZE - 1) + 46;
+      g.textBaseline = "middle"; g.textAlign = "left"; g.fillStyle = "#9a8c7c"; g.font = `500 18px ${sans}`;
+      g.fillText(`已點 ${state.marked.filter(Boolean).length} / ${N}`, PAD, fy);
+      if (wins.length) {
+        g.textAlign = "right"; g.fillStyle = "#af6025"; g.font = `800 26px ${latin}`;
+        g.fillText(wins.length > 1 ? `BINGO ×${wins.length}` : "BINGO", W - PAD, fy);
+      }
+      return cv;
+    }
+
+    $("shotBtn").addEventListener("click", async () => {
+      const cv = drawCard();
+      const msg = $("shotMsg");
+      const img = $("shotImg");
+      img.hidden = true;
+      try {
+        if (!navigator.clipboard || !window.ClipboardItem) throw new Error("no clipboard");
+        const blob = new Promise((res) => cv.toBlob(res, "image/png"));
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        msg.textContent = "已複製到剪貼簿，去 Discord 貼上就行";
+      } catch (e) {
+        img.src = cv.toDataURL("image/png");
+        img.hidden = false;
+        msg.textContent = "這個瀏覽器不讓網頁直接複製圖片，請對下方圖片按右鍵（手機長按）複製";
+      }
+      msg.hidden = false;
+    });
+
+    // 背景飄落的灰燼與火星
+    (function ash() {
+      const c = $("ash");
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let w, h, dpr, parts;
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = c.clientWidth; h = c.clientHeight;
+        c.width = w * dpr; c.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      function spawn(initial) {
+        const ember = Math.random() < 0.35;
+        return {
+          x: Math.random() * w,
+          y: initial ? Math.random() * h : (ember ? h + 10 : -10),
+          r: ember ? 0.8 + Math.random() * 1.4 : 0.6 + Math.random() * 1.6,
+          vy: ember ? -(0.2 + Math.random() * 0.5) : 0.15 + Math.random() * 0.35,
+          vx: (Math.random() - 0.5) * 0.25,
+          a: 0.2 + Math.random() * 0.5,
+          ember,
+        };
+      }
+      resize();
+      parts = Array.from({ length: Math.round(Math.min(w, 900) / 14) }, () => spawn(true));
+      window.addEventListener("resize", resize);
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        for (let i = 0; i < parts.length; i++) {
+          const p = parts[i];
+          p.x += p.vx + Math.sin((p.y + i) / 60) * 0.15;
+          p.y += p.vy;
+          if (p.y > h + 12 || p.y < -12) parts[i] = spawn(false);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.ember ? `rgba(255,${120 + (i % 60)},40,${p.a})` : `rgba(160,150,140,${p.a * 0.6})`;
+          ctx.fill();
+        }
+        if (!reduce) requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+  </script>
+
+</body>
+
+</html>
